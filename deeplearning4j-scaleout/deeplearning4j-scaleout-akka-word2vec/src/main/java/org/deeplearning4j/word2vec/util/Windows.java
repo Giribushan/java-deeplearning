@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 import org.deeplearning4j.berkeley.StringUtils;
+import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
 import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
 
@@ -90,7 +91,6 @@ public class Windows {
 		List<String> window = new ArrayList<>();
         List<String> onlyTokens = new ArrayList<>();
 		int contextSize = (int) Math.floor((windowSize - 1 ) / 2);
-
         for (int i =  wordPos - contextSize; i <= wordPos + contextSize;i++){
 			if(i < 0)
 				window.add("<s>");
@@ -98,8 +98,8 @@ public class Windows {
 				window.add("</s>");
 			else  {
                 onlyTokens.add(sentence.get(i));
-                window.add(sentence.get(i));
-
+                InputHomogenization ih = new InputHomogenization(sentence.get(i));
+                window.add(ih.transform());
             }
 		}
 
@@ -107,8 +107,13 @@ public class Windows {
         String window2 = StringUtils.join(onlyTokens);
         int begin = wholeSentence.indexOf(window2);
         int end =   begin + window2.length();
-        return new Window(window,begin,end);
-
+        Window w = new Window(window,begin,end);
+        String[] centerWordParts  = sentence.get(wordPos).split("=@=");//TODO find better delimiter
+		if(centerWordParts.length>1){
+			w.setLabel(centerWordParts[1]);
+		}
+		
+		return w;
 	}
 
 

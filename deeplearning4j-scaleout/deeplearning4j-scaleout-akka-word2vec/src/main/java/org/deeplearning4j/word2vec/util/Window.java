@@ -64,38 +64,41 @@ public class Window implements Serializable {
 
 	private void initContext() {
 		int median = (int) Math.floor(words.size() / 2);
-		List<String> begin = words.subList(0, median);
-		List<String> after = words.subList(median + 1,words.size());
+//		List<String> begin = words.subList(0, median);
+//		List<String> after = words.subList(median + 1,words.size());
 
 
-		for(String s : begin) {
-			if(s.matches(BEGIN_LABEL)) {
-				this.label = s.replaceAll("(<|>)","").replace("/","");
-				beginLabel = true;
-			}
-			else if(s.matches(END_LABEL)) {
-				endLabel = true;
-				this.label = s.replaceAll("(<|>|/)","").replace("/","");
-
-			}
-
-		}
-
-		for(String s1 : after) {
-
-            if(s1.matches(BEGIN_LABEL)) {
-                this.label = s1.replaceAll("(<|>)","").replace("/","");
-                beginLabel = true;
-            }
-
-			if(s1.matches(END_LABEL)) {
-				endLabel = true;
-				this.label = s1.replaceAll("(<|>)","");
-
-			}
-		}
+//		for(String s : begin) {
+//			if(s.matches(BEGIN_LABEL)) {
+//				this.label = s.replaceAll("(<|>)","").replace("/","");
+//				beginLabel = true;
+//			}
+//			else if(s.matches(END_LABEL)) {
+//				endLabel = true;
+//				this.label = s.replaceAll("(<|>|/)","").replace("/","");
+//
+//			}
+//
+//		}
+//
+//		for(String s1 : after) {
+//
+//            if(s1.matches(BEGIN_LABEL)) {
+//                this.label = s1.replaceAll("(<|>)","").replace("/","");
+//                beginLabel = true;
+//            }
+//
+//			if(s1.matches(END_LABEL)) {
+//				endLabel = true;
+//				this.label = s1.replaceAll("(<|>)","");
+//
+//			}
+//		}
 		this.median = median;
-
+//		String[] centerWordParts  = words.get(median).split("/");
+//		if(centerWordParts.length>1){
+//			label = centerWordParts[1]; 
+//		}
 	}
 
 

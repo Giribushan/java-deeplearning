@@ -898,8 +898,8 @@ public class Word2Vec implements Persistable {
     public void setSentenceIter(SentenceIterator sentenceIter) {
         this.sentenceIter = sentenceIter;
         this.shouldReset = false;
-    }
 
+    }
     @Override
     public void write(OutputStream os) {
         try {

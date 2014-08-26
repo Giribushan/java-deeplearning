@@ -127,8 +127,9 @@ public class Word2VecDataSetIterator implements DataSetIterator {
                 List<Window> windows = Windows.windows(sentence,vec.getTokenizerFactory(),vec.getWindow());
                 if(windows.isEmpty() && !sentence.isEmpty())
                     throw new IllegalStateException("Empty window on sentence");
-                for(Window w : windows)
-                    w.setLabel(iter.currentLabel());
+//                for(Window w : windows){
+//                    w.setLabel(iter.currentLabel());
+//                }
                 cachedWindow.addAll(windows);
             }
 
