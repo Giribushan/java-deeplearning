@@ -1,6 +1,9 @@
 package org.deeplearning4j.datasets.vectorizer;
 
-import org.deeplearning4j.datasets.DataSet;
+
+import org.nd4j.linalg.dataset.DataSet;
+
+import java.io.Serializable;
 
 /**
  * A Vectorizer at its essence takes an input source
@@ -9,7 +12,7 @@ import org.deeplearning4j.datasets.DataSet;
  * @author Adam Gibson
  *
  */
-public interface Vectorizer {
+public interface Vectorizer extends Serializable {
 
 	/**
 	 * Vectorizes the input source in to a dataset

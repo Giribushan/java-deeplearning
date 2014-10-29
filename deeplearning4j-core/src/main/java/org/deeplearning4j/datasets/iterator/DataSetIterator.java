@@ -1,9 +1,11 @@
 package org.deeplearning4j.datasets.iterator;
 
+import org.nd4j.linalg.dataset.DataSet;
+
 import java.io.Serializable;
 import java.util.Iterator;
 
-import org.deeplearning4j.datasets.DataSet;
+
 
 /**
  * A DataSetIterator handles
@@ -17,7 +19,7 @@ import org.deeplearning4j.datasets.DataSet;
  * 
  * while(iter.hasNext()) {
  *     DataSet d = iter.next();
- *     //train network...
+ *     //iterate network...
  * }
  * 
  * 
@@ -81,5 +83,13 @@ public interface DataSetIterator extends Iterator<DataSet>,Serializable {
      * @return
      */
 	int numExamples();
+
+
+    /**
+     * Set a pre processor
+     * @param preProcessor a pre processor to set
+     */
+    void setPreProcessor(DataSetPreProcessor preProcessor);
+
 	
 }

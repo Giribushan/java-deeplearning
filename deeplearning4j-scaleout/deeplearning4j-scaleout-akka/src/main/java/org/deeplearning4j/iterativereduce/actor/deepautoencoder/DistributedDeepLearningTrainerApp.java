@@ -1,15 +1,15 @@
 package org.deeplearning4j.iterativereduce.actor.deepautoencoder;
 
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
-import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.deepautoencoder.DeepAutoEncoderHazelCastStateTracker;
+import org.nd4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.core.conf.DeepLearningConfigurableDistributed;
 import org.deeplearning4j.scaleout.zookeeper.ZookeeperConfigurationRetriever;
+import org.deeplearning4j.util.SerializationUtils;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
@@ -37,7 +37,7 @@ import java.io.File;
  *          
  *       
  *       Optional:
- *        -fte number of fine tune epochs to train on (default: 100)
+ *        -fte number of fine tune epochs to iterate on (default: 100)
  *        -pte number of epochs for pretraining (default: 100)
  *        -r   seed value for the random number generator (default: 123)
  *        -ftl the starter fine tune learning rate (default: 0.1)
@@ -45,7 +45,7 @@ import java.io.File;
  *        -sp   number of inputs to split by default: 10
  *        -adg use adagrad or not: default value: true
  *        
- *        -e   number of examples to train on: if unspecified will just train on everything found
+ *        -e   number of examples to iterate on: if unspecified will just iterate on everything found
  *        DBN/CDBN:
  *        -k the k for rbms (default: 1)
  *        
@@ -71,7 +71,7 @@ public class DistributedDeepLearningTrainerApp implements DeepLearningConfigurab
 	protected int inputs;
 	@Option(name="-o",usage="number of outputs for the network",handler=IntOptionHandler.class)
 	protected int outputs;
-	@Option(name="-fte",usage="number of fine tune epochs to train on (default: 100)",handler=IntOptionHandler.class)
+	@Option(name="-fte",usage="number of fine tune epochs to iterate on (default: 100)",handler=IntOptionHandler.class)
 	protected int finetuneEpochs = 100;
 	@Option(name="-pte",usage="number of epochs for pretraining (default: 100)",handler=IntOptionHandler.class)
 	protected int pretrainEpochs = 100;
@@ -80,13 +80,13 @@ public class DistributedDeepLearningTrainerApp implements DeepLearningConfigurab
 	@Option(name="-k",usage="the k for rbms (default: 1)",handler=IntOptionHandler.class)
 	protected int k = 1;
 	@Option(name="-c",usage="corruption level (for denoising autoencoders) (default: 0.3)",handler=DoubleOptionHandler.class)
-	protected double corruptionLevel = 0.3;
+	protected float corruptionLevel = 0.3f;
 	@Option(name="-h",usage="the host to connect to as a master (default: 127.0.0.1)")
 	protected String host = "localhost";
 	@Option(name="-ftl",usage="the starter fine tune learning rate (default: 0.1)",handler=DoubleOptionHandler.class)
-	protected double finetuneLearningRate = 0.1;
+	protected float finetuneLearningRate = 0.1f;
 	@Option(name="-ptl",usage="the starter pretrain learning rate (default: 0.1)",handler=DoubleOptionHandler.class)
-	protected double pretrainLearningRate = 0.1;
+	protected float pretrainLearningRate = 0.1f;
 	@Option(name="-hl",usage="hidden layer sizes (comma separated list)")
 	protected String hiddenLayerSizesOption;
 	protected int[] hiddenLayerSizes = {300,300,300};
@@ -100,7 +100,7 @@ public class DistributedDeepLearningTrainerApp implements DeepLearningConfigurab
 	protected String dataSet;
 	@Option(name = "-datasetpath",usage="dataset path; eg if you save a dataset you can just point the network runner at a path rather than worrying about a class to instantiate")
 	protected String dataPath;
-	@Option(name="-e",usage="number of examples to train on: if unspecified will just train on everything found")
+	@Option(name="-e",usage="number of examples to iterate on: if unspecified will just iterate on everything found")
 	protected int numExamples = -1;
 	@Option(name="-adg",usage="use adagrad; default true")
 	protected boolean useAdaGrad = true;
@@ -162,19 +162,19 @@ public class DistributedDeepLearningTrainerApp implements DeepLearningConfigurab
 			conf.setMultiLayerClazz((Class<? extends BaseMultiLayerNetwork>) Class.forName(getClassForAlgorithm()));
 			conf.setLayerSizes(hiddenLayerSizes);
 			conf.setSplit(10);
-			conf.setnIn(iter.inputColumns());
-			conf.setnOut(iter.totalOutcomes());
-			conf.setPretrainEpochs(pretrainEpochs);
-			conf.setFinetuneEpochs(finetuneEpochs);
-			conf.setSeed(rngSeed);
-			conf.setPretrainLearningRate(pretrainLearningRate);
-			conf.setUseAdaGrad(useAdaGrad);
-			conf.setCorruptionLevel(corruptionLevel);
+			conf.getConf().setnIn(iter.inputColumns());
+			conf.getConf().setnOut(iter.totalOutcomes());
+			conf.getConf().setPretrainEpochs(pretrainEpochs);
+			conf.getConf().setFinetuneEpochs(finetuneEpochs);
+			conf.getConf().setSeed(rngSeed);
+			conf.getConf().setPretrainLearningRate(pretrainLearningRate);
+			conf.getConf().setUseAdaGrad(useAdaGrad);
+			conf.getConf().setCorruptionLevel(corruptionLevel);
 			conf.setSplit(split);
-			conf.setK(k);
-			conf.setFinetuneLearningRate(finetuneLearningRate);
-			conf.setPretrainEpochs(pretrainEpochs);
-			conf.setPretrainLearningRate(pretrainLearningRate);
+			conf.getConf().setK(k);
+			conf.getConf().setFinetuneLearningRate(finetuneLearningRate);
+			conf.getConf().setPretrainEpochs(pretrainEpochs);
+			conf.getConf().setPretrainLearningRate(pretrainLearningRate);
 
 
 			//run the master
@@ -222,7 +222,7 @@ public class DistributedDeepLearningTrainerApp implements DeepLearningConfigurab
 				throw new IllegalStateException("Can't have both a data applyTransformToDestination and a dataset path defined");
 
 			else if(dataPath != null) {
-				DataSet data = DataSet.load(new File(dataPath));
+				DataSet data = SerializationUtils.readObject(new File(dataPath));
 				this.iter = new ListDataSetIterator(data.asList(),split);
 			}
 			
@@ -241,12 +241,12 @@ public class DistributedDeepLearningTrainerApp implements DeepLearningConfigurab
 	protected String getClassForAlgorithm() {
 		switch(algorithm) {
 		case  "sda" :
-			return "org.deeplearning4j.sda.StackedDenoisingAutoEncoder";
+			return "org.deeplearning4j.models.classifiers.sda.StackedDenoisingAutoEncoder";
 
 		case "dbn" : 
-			return "org.deeplearning4j.dbn.DBN";
+			return "org.deeplearning4j.models.classifiers.dbn.DBN";
 		case "cdbn":
-			return "org.deeplearning4j.dbn.CDBN";
+			return "org.deeplearning4j.models.classifiers.dbn.CDBN";
 		}
 		return null;
 	}
@@ -308,7 +308,7 @@ public class DistributedDeepLearningTrainerApp implements DeepLearningConfigurab
 	}
 
 
-	public double getCorruptionLevel() {
+	public float getCorruptionLevel() {
 		return corruptionLevel;
 	}
 
@@ -318,12 +318,12 @@ public class DistributedDeepLearningTrainerApp implements DeepLearningConfigurab
 	}
 
 
-	public double getFinetineLearningRate() {
+	public float getFinetineLearningRate() {
 		return finetuneLearningRate;
 	}
 
 
-	public double getPretrainLearningRate() {
+	public float getPretrainLearningRate() {
 		return pretrainLearningRate;
 	}
 

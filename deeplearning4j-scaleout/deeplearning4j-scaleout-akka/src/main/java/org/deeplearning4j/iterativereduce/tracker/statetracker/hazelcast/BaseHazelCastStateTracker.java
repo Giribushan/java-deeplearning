@@ -7,27 +7,22 @@ import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.ListConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.*;
-import io.dropwizard.Application;
-import io.dropwizard.setup.Bootstrap;
-import io.dropwizard.setup.Environment;
 import org.apache.commons.compress.utils.IOUtils;
-import org.deeplearning4j.datasets.DataSet;
+
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.util.PortTaken;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.*;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.datasetcache.LocalDataSetCache;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.workretriever.LocalWorkRetriever;
+import org.nd4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.optimize.OutputLayerTrainingEvaluator;
-import org.deeplearning4j.optimize.TrainingEvaluator;
+import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
-import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
-import org.deeplearning4j.util.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -103,6 +98,8 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
     private String connectionString;
     private Map<String,Long> heartbeat;
     private StateTrackerDropWizardResource resource;
+
+    public final static String HAZELCAST_HOST = "hazelcast.host";
 
     public BaseHazelCastStateTracker() throws Exception {
         this(DEFAULT_HAZELCAST_PORT);
@@ -455,7 +452,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
 
     /**
      * Disables the worker with the given id,
-     * this means that it will not train
+     * this means that it will not iterate
      * or take any new jobs until re enabled
      *
      * @param id the id of the worker to disable
@@ -504,7 +501,11 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
      */
     @Override
     public void addUpdate(String id,E update) {
+        if(update == null)
+            return;
+
         try {
+
             updateSaver().save(id,update);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -559,6 +560,13 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
         this(connectionString,"worker",DEFAULT_HAZELCAST_PORT);
     }
 
+    /**
+     *
+     * @param connectionString
+     * @param type
+     * @param stateTrackerPort
+     * @throws Exception
+     */
     public BaseHazelCastStateTracker(String connectionString,String type,int stateTrackerPort) throws Exception {
         log.info("Setting up hazelcast with type " + type + " connection string " + connectionString + " and port " + stateTrackerPort);
 
@@ -566,15 +574,25 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
         if(type.equals("master") && !PortTaken.portTaken(stateTrackerPort)) {
             //sets up a proper connection string for reference wrt external actors needing a reference
             if(connectionString.equals("master")) {
-                String host = InetAddress.getLocalHost().getHostName();
-                this.connectionString = host + ":" + stateTrackerPort;
+                String hazelCastHost = null;
+                try {
+                    //try localhost fall back to 0.0.0.0
+                    hazelCastHost = System.getProperty(HAZELCAST_HOST, InetAddress.getLocalHost().getHostName());
+                }catch(Exception e) {
+                    hazelCastHost = "0.0.0.0";
+                }
+                this.connectionString = hazelCastHost + ":" + stateTrackerPort;
             }
+
+
+
 
             this.hazelCastPort = stateTrackerPort;
             config = hazelcast();
 
 
             h = Hazelcast.newHazelcastInstance(config);
+
             h.getCluster().addMembershipListener(new MembershipListener() {
 
                 @Override
@@ -596,6 +614,9 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
                 }
 
             });
+
+
+
         }
 
         else if(type.equals("master") && PortTaken.portTaken(stateTrackerPort))
@@ -648,6 +669,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
         patienceIncrease = h.getAtomicReference(PATIENCE_INCREASE);
         numBatches = h.getAtomicReference(NUM_BATCHES_SO_FAR_RAN);
 
+
         //applyTransformToDestination defaults only when master, otherwise, overrides previous values
         if(type.equals("master")) {
             begunTraining.set(false);
@@ -665,6 +687,10 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
             validationEpochs.set((int) Math.min(10,patience() / 2));
             numBatches.set(0);
         }
+
+        workRetriever = new LocalWorkRetriever(h);
+        cache = new LocalDataSetCache(".",h);
+
 
 
     }
@@ -693,7 +719,10 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
         join.getMulticastConfig().setEnabled(!isAws);
 
 
-
+        String interf = System.getProperty("hazelcast.interface");
+        if (interf != null) {
+            conf.getNetworkConfig().getInterfaces().setEnabled(true).addInterface(interf);
+        }
 
         ListConfig jobConfig = new ListConfig();
         jobConfig.setName(JOBS);
@@ -727,9 +756,23 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
         heartbeatConfig.setName(HEART_BEAT);
         conf.addMapConfig(heartbeatConfig);
 
-        MapConfig workerEnabledConifg = new MapConfig();
-        workerEnabledConifg.setName(WORKER_ENABLED);
-        conf.addMapConfig(workerEnabledConifg);
+        MapConfig workerEnabledConfig = new MapConfig();
+        workerEnabledConfig.setName(WORKER_ENABLED);
+        conf.addMapConfig(workerEnabledConfig);
+
+        MapConfig dataSetCache = new MapConfig();
+        dataSetCache.setName(LocalDataSetCache.DATA_SET_MAP);
+        conf.addMapConfig(dataSetCache);
+
+
+        MapConfig fileUpdateSaver = new MapConfig();
+        fileUpdateSaver.setName(org.deeplearning4j.iterativereduce.tracker.statetracker.updatesaver.LocalFileUpdateSaver.UPDATE_SAVER);
+        conf.addMapConfig(fileUpdateSaver);
+
+
+        MapConfig workRetriever = new MapConfig();
+        workRetriever.setName(LocalWorkRetriever.WORK_RETRIEVER);
+        conf.addMapConfig(workRetriever);
 
         return conf;
 
@@ -875,6 +918,8 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
 
     @Override
     public Job jobFor(String id) {
+        if(done.get())
+            return null;
         IAtomicReference<Job> j = h.getAtomicReference("job-" + id);
         if(j.isNull() || isCurrentlyJob(id))
             return null;
@@ -997,7 +1042,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
             done.set(true);
             updateSaver().cleanup();
         }catch(Exception e) {
-            log.warn("Hazelcast already shutdown...done() being applyTransformToDestination is pointless");
+            log.warn("Hazelcast already shutdown...done() being called is pointless");
         }
     }
 

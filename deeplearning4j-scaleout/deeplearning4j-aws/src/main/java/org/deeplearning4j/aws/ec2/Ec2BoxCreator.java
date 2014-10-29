@@ -1,28 +1,16 @@
 package org.deeplearning4j.aws.ec2;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
+import com.amazonaws.regions.*;
+import com.amazonaws.services.ec2.AmazonEC2;
+import com.amazonaws.services.ec2.model.*;
 import org.deeplearning4j.aws.s3.BaseS3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.services.ec2.model.DescribeInstancesResult;
-import com.amazonaws.services.ec2.model.DescribeReservedInstancesResult;
-import com.amazonaws.services.ec2.model.Instance;
-import com.amazonaws.services.ec2.model.InstanceStateChange;
-import com.amazonaws.services.ec2.model.LaunchSpecification;
-import com.amazonaws.services.ec2.model.RequestSpotInstancesRequest;
-import com.amazonaws.services.ec2.model.RequestSpotInstancesResult;
-import com.amazonaws.services.ec2.model.Reservation;
-import com.amazonaws.services.ec2.model.ReservedInstances;
-import com.amazonaws.services.ec2.model.RunInstancesRequest;
-import com.amazonaws.services.ec2.model.RunInstancesResult;
-import com.amazonaws.services.ec2.model.SpotInstanceRequest;
-import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
-import com.amazonaws.services.ec2.model.TerminateInstancesResult;
-import com.amazonaws.services.ec2.model.InstanceState;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Creates Ec2Boxes
  * @author Adam Gibson
@@ -37,13 +25,13 @@ public class Ec2BoxCreator extends BaseS3 {
 	private List<String> boxesCreated;
 	private String securityGroupId;
 	private String keyPair;
+    private Regions regions = Regions.DEFAULT_REGION;
 	private static Logger log = LoggerFactory.getLogger(Ec2BoxCreator.class);
 	
 	//centos
 	public final static String DEFAULT_AMI = "ami-8997afe0";
 	/**
 	 * 
-	 * @param amiId amazon image id
 	 * @param numBoxes number of boxes
 	 * @param size the size of the instances
 	 */
@@ -100,7 +88,7 @@ public class Ec2BoxCreator extends BaseS3 {
 
 		// Setup an arraylist to collect all of the request ids we want to
 		// watch hit the running state.
-		List<String> spotInstanceRequestIds = new ArrayList<String>();
+		List<String> spotInstanceRequestIds = new ArrayList<>();
 
 		// Add all of the request ids to the hashset, so we can determine when they hit the
 		// active state.
@@ -111,13 +99,23 @@ public class Ec2BoxCreator extends BaseS3 {
 
 	}
 
-	public void create() {
+    public void setRegion(Regions regions) {
+        this.regions = regions;
+    }
+
+
+    /**
+     * Create the instances
+     */
+    public void create() {
 		RunInstancesRequest runInstancesRequest = 
 				new RunInstancesRequest().withImageId(amiId)
 				.withInstanceType(size).withKeyName(keyPair)
 				.withMinCount(1).withSecurityGroupIds(securityGroupId)
 				.withMaxCount(numBoxes);
-		List<Instance> boxes  = getEc2().runInstances(runInstancesRequest)
+        AmazonEC2 ec2 = getEc2();
+        ec2.setRegion(com.amazonaws.regions.Region.getRegion(regions));
+		List<Instance> boxes  = ec2.runInstances(runInstancesRequest)
 				.getReservation().getInstances();
 		if(boxesCreated == null) {
 			boxesCreated = new ArrayList<>();

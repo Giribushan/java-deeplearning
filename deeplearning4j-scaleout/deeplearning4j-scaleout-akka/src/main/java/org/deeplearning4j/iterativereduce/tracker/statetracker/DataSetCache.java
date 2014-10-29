@@ -1,6 +1,7 @@
 package org.deeplearning4j.iterativereduce.tracker.statetracker;
 
-import org.deeplearning4j.datasets.DataSet;
+
+import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.Serializable;
 

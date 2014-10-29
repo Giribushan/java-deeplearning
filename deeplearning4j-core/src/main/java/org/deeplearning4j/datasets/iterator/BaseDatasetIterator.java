@@ -1,6 +1,7 @@
 package org.deeplearning4j.datasets.iterator;
 
-import org.deeplearning4j.datasets.DataSet;
+import org.nd4j.linalg.dataset.DataSet;
+
 /**
  * Baseline implementation includes
  * control over the data fetcher and some basic
@@ -14,7 +15,7 @@ public class BaseDatasetIterator implements DataSetIterator {
 	private static final long serialVersionUID = -116636792426198949L;
 	protected int batch,numExamples;
 	protected DataSetFetcher fetcher;
-	
+	protected DataSetPreProcessor preProcessor;
 	
 	
 	public BaseDatasetIterator(int batch,int numExamples,DataSetFetcher fetcher) {
@@ -77,10 +78,23 @@ public class BaseDatasetIterator implements DataSetIterator {
 		return numExamples;
 	}
 
-	@Override
+    /**
+     * Set a pre processor
+     *
+     * @param preProcessor a pre processor to set
+     */
+    @Override
+    public void setPreProcessor(DataSetPreProcessor preProcessor) {
+        this.preProcessor = preProcessor;
+    }
+
+    @Override
 	public DataSet next(int num) {
 		fetcher.fetch(num);
-		return fetcher.next();
+		DataSet next =  fetcher.next();
+        if(preProcessor != null)
+            preProcessor.preProcess(next);
+        return next;
 	}
 	
 	

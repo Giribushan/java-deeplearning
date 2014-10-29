@@ -6,6 +6,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.*;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.updatesaver.LocalFileUpdateSaver;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 
 
@@ -21,6 +22,7 @@ import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 public class HazelCastStateTracker  extends BaseHazelCastStateTracker<UpdateableImpl> {
 
     public HazelCastStateTracker() throws Exception {
+        setUpdateSaver(createUpdateSaver());
     }
 
     /**
@@ -31,6 +33,8 @@ public class HazelCastStateTracker  extends BaseHazelCastStateTracker<Updateable
      */
     public HazelCastStateTracker(int stateTrackerPort) throws Exception {
         super(stateTrackerPort);
+        setUpdateSaver(createUpdateSaver());
+
     }
 
     /**
@@ -44,11 +48,13 @@ public class HazelCastStateTracker  extends BaseHazelCastStateTracker<Updateable
 
     public HazelCastStateTracker(String connectionString, String type, int stateTrackerPort) throws Exception {
         super(connectionString, type, stateTrackerPort);
+        setUpdateSaver(createUpdateSaver());
+
     }
 
     @Override
     public UpdateSaver<UpdateableImpl> createUpdateSaver() {
-        return new LocalFileUpdateSaver();
+        return new LocalFileUpdateSaver(".",getH());
     }
 
     /**

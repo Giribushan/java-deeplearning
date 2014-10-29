@@ -5,13 +5,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
+import org.nd4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.optimize.TrainingEvaluator;
+import org.deeplearning4j.optimize.api.TrainingEvaluator;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
-import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
-
 /**
  * A StateTracker is a cross cluster 
  * monitor for state of workers and jobs
@@ -201,7 +199,7 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
 
     /**
      * Disables the worker with the given id,
-     * this means that it will not train
+     * this means that it will not iterate
      * or take any new jobs until re enabled
      * @param id the id of the worker to disable
      */
@@ -298,7 +296,7 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
 
 
     /**
-	 * Increments the number of times pre train has run.
+	 * Increments the number of times pre iterate has run.
 	 */
 	void incrementNumTimesPreTrainRan();
 	

@@ -1,14 +1,14 @@
 package org.deeplearning4j.iterativereduce.actor.core.actor;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import akka.actor.*;
+import akka.actor.SupervisorStrategy.Directive;
+import akka.cluster.Cluster;
+import akka.cluster.ClusterEvent.MemberEvent;
+import akka.contrib.pattern.DistributedPubSubExtension;
+import akka.contrib.pattern.DistributedPubSubMediator;
+import akka.contrib.pattern.DistributedPubSubMediator.Put;
 import akka.dispatch.Futures;
-import org.deeplearning4j.datasets.DataSet;
+import akka.japi.Function;
 import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
@@ -17,19 +17,19 @@ import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.ComputableWorker;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
-
-import org.jblas.DoubleMatrix;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-import akka.actor.SupervisorStrategy.Directive;
-import akka.cluster.Cluster;
-import akka.cluster.ClusterEvent.MemberEvent;
-import akka.contrib.pattern.DistributedPubSubExtension;
-import akka.contrib.pattern.DistributedPubSubMediator;
-import akka.contrib.pattern.DistributedPubSubMediator.Put;
-import akka.japi.Function;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Baseline worker actor class
@@ -163,13 +163,13 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
             @Override
             public E call() throws Exception {
 
-                DoubleMatrix newInput = new DoubleMatrix(list.size(), list.get(0).getFirst().columns);
-                DoubleMatrix newOutput = new DoubleMatrix(list.size(), list.get(0).getSecond().columns);
+                INDArray newInput = Nd4j.create(list.size(), list.get(0).getFeatureMatrix().columns());
+                INDArray newOutput = Nd4j.create(list.size(), list.get(0).getLabels().columns());
 
 
                 for (int i = 0; i < list.size(); i++) {
-                    newInput.putRow(i, list.get(i).getFirst());
-                    newOutput.putRow(i, list.get(i).getSecond());
+                    newInput.putRow(i, list.get(i).getFeatureMatrix());
+                    newOutput.putRow(i, list.get(i).getLabels());
                 }
 
                 //flag that work has begun if not flagged already
@@ -310,7 +310,8 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 
     @Override
     public SupervisorStrategy supervisorStrategy() {
-        return new OneForOneStrategy(0, Duration.Zero(),
+        return new OneForOneStrategy(0,
+                Duration.Zero(),
                 new Function<Throwable, Directive>() {
                     public Directive apply(Throwable cause) {
                         log.error("Problem with processing",cause);
@@ -320,7 +321,8 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 
                         return SupervisorStrategy.restart();
                     }
-                });
+                }
+            );
     }
 
 

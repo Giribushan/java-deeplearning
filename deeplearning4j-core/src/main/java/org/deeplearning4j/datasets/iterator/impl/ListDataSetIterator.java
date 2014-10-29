@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.deeplearning4j.datasets.DataSet;
+
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.DataSetPreProcessor;
+import org.nd4j.linalg.dataset.DataSet;
 
 /**
  * Wraps a data applyTransformToDestination collection
@@ -23,7 +25,8 @@ public class ListDataSetIterator implements DataSetIterator {
 	private int curr = 0;
 	private int batch = 10;
 	private List<DataSet> list;
-	
+	private DataSetPreProcessor preProcessor;
+
 	public ListDataSetIterator(Collection<DataSet> coll,int batch) {
 		list = new ArrayList<>(coll);
 		this.batch = batch;
@@ -46,16 +49,7 @@ public class ListDataSetIterator implements DataSetIterator {
 
 	@Override
 	public synchronized DataSet next() {
-		int end = curr + batch;
-		List<DataSet> r = new ArrayList<DataSet>();
-		if(end >= list.size())
-			end = list.size();
-		for(; curr < end; curr++) {
-			r.add(list.get(curr));
-		}
-		
-		DataSet d = DataSet.merge(r);
-		return d;
+		return next(batch);
 	}
 
 	@Override
@@ -70,12 +64,12 @@ public class ListDataSetIterator implements DataSetIterator {
 
 	@Override
 	public int inputColumns() {
-		return list.get(0).getFirst().columns;
+		return list.get(0).getFeatureMatrix().columns();
 	}
 
 	@Override
 	public int totalOutcomes() {
-		return list.get(0).getSecond().columns;
+		return list.get(0).getLabels().columns();
 	}
 
 	@Override
@@ -98,11 +92,21 @@ public class ListDataSetIterator implements DataSetIterator {
 		return list.size();
 	}
 
-	@Override
+    /**
+     * Set a pre processor
+     *
+     * @param preProcessor a pre processor to set
+     */
+    @Override
+    public void setPreProcessor(DataSetPreProcessor preProcessor) {
+       this.preProcessor = preProcessor;
+    }
+
+    @Override
 	public DataSet next(int num) {
 		int end = curr + num;
 
-		List<DataSet> r = new ArrayList<DataSet>();
+		List<DataSet> r = new ArrayList<>();
 		if(end >= list.size())
 			end = list.size();
 		for(; curr < end; curr++) {
@@ -110,6 +114,8 @@ public class ListDataSetIterator implements DataSetIterator {
 		}
 		
 		DataSet d = DataSet.merge(r);
+        if(preProcessor != null)
+            preProcessor.preProcess(d);
 		return d;
 	}
 

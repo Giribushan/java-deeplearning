@@ -7,13 +7,13 @@ import akka.actor.Props;
 import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.routing.RoundRobinPool;
-import org.deeplearning4j.autoencoder.DeepAutoEncoder;
-import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.models.featuredetectors.autoencoder.SemanticHashing;
 import org.deeplearning4j.iterativereduce.actor.core.*;
 import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.deepautoencoder.DeepAutoEncoderAccumulatorIterateAndUpdate;
+import org.nd4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.deepautoencoder.UpdateableEncoderImpl;
@@ -30,7 +30,7 @@ import java.util.Collection;
  */
 public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor<UpdateableEncoderImpl> {
     //start with this network as a baseline
-    protected DeepAutoEncoder network;
+    protected SemanticHashing network;
     protected BaseMultiLayerNetwork encoder;
     /**
      * Creates the master and the workers with this given conf
@@ -64,7 +64,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
      * will manage dataset dispersion
      * @param network the neural network to use
      */
-    public MasterActor(Conf conf,ActorRef batchActor,DeepAutoEncoder network,StateTracker<UpdateableEncoderImpl> stateTracker) {
+    public MasterActor(Conf conf,ActorRef batchActor,SemanticHashing network,StateTracker<UpdateableEncoderImpl> stateTracker) {
         super(conf,batchActor,stateTracker);
         this.network = network;
         setup(conf);
@@ -121,16 +121,16 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
         log.info("Broadcasting initial master network");
-        DeepAutoEncoder network;
+        SemanticHashing network;
         if(this.network == null) {
             if(encoder != null) {
-                network = new DeepAutoEncoder.Builder().withEncoder(this.network).build();
+                network = new SemanticHashing.Builder().withEncoder(this.network).build();
                 this.network = network;
 
 
             }
             else {
-                network = new DeepAutoEncoder.Builder().withEncoder(conf.init()).build();
+                network = new SemanticHashing.Builder().withEncoder(conf.init()).build();
                 this.network = network;
 
             }
@@ -141,13 +141,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
         else
             network = this.network;
-
-
-        network.setOutputLayerActivation(conf.getOutputActivationFunction());
-        network.setRoundCodeLayerInput(conf.isRoundCodeLayer());
-        network.setOutputLayerLossFunction(conf.getOutputLayerLossFunction());
-        network.setNormalizeCodeLayerOutput(conf.isNormalizeCodeLayer());
-
 
 
         UpdateableEncoderImpl masterResults = new UpdateableEncoderImpl(network);

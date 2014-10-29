@@ -1,7 +1,7 @@
 package org.deeplearning4j.datasets.iterator;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.impl.MovingWindowDataSetFetcher;
+import org.nd4j.linalg.dataset.DataSet;
 
 /**
  *

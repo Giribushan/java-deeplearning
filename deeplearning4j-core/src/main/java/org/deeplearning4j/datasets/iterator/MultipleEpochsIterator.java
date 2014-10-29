@@ -1,6 +1,6 @@
 package org.deeplearning4j.datasets.iterator;
 
-import org.deeplearning4j.datasets.DataSet;
+import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +13,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
     private DataSetIterator iter;
     private int passes = 0;
     private static Logger log = LoggerFactory.getLogger(MultipleEpochsIterator.class);
+    private DataSetPreProcessor preProcessor;
 
     public MultipleEpochsIterator(int numPasses,DataSetIterator iter) {
         this.numPasses = numPasses;
@@ -28,7 +29,21 @@ public class MultipleEpochsIterator implements DataSetIterator {
      */
     @Override
     public DataSet next(int num) {
-        return iter.next(num);
+        if(!iter.hasNext()) {
+            if(passes < numPasses) {
+                passes++;
+                batch = 0;
+                log.info("Epoch " + passes + " batch " + batch);
+                iter.reset();
+
+            }
+        }
+        batch++;
+
+        DataSet next = iter.next(num);
+        if(preProcessor != null)
+            preProcessor.preProcess(next);
+        return next;
     }
 
     /**
@@ -102,6 +117,16 @@ public class MultipleEpochsIterator implements DataSetIterator {
     }
 
     /**
+     * Set a pre processor
+     *
+     * @param preProcessor a pre processor to set
+     */
+    @Override
+    public void setPreProcessor(DataSetPreProcessor preProcessor) {
+        this.preProcessor = preProcessor;
+    }
+
+    /**
      * Returns {@code true} if the iteration has more elements.
      * (In other words, returns {@code true} if {@link #next} would
      * return an element rather than throwing an exception.)
@@ -110,7 +135,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
      */
     @Override
     public boolean hasNext() {
-        return iter.hasNext() || passes < numPasses;
+        return iter.hasNext() && passes < numPasses;
     }
 
     /**
@@ -131,8 +156,14 @@ public class MultipleEpochsIterator implements DataSetIterator {
         }
         batch++;
 
-        return iter.next();
+        DataSet next = iter.next();
+        if(preProcessor != null)
+            preProcessor.preProcess(next);
+        return next;
     }
+
+
+
 
     /**
      * Removes from the underlying collection the last element returned

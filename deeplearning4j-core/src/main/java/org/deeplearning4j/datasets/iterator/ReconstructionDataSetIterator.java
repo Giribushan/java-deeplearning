@@ -1,7 +1,7 @@
 package org.deeplearning4j.datasets.iterator;
 
 
-import org.deeplearning4j.datasets.DataSet;
+import org.nd4j.linalg.dataset.DataSet;
 
 /**
  * Wraps a data applyTransformToDestination iterator setting the first (feature matrix) as
@@ -12,7 +12,7 @@ import org.deeplearning4j.datasets.DataSet;
 public class ReconstructionDataSetIterator implements DataSetIterator {
 
     private DataSetIterator iter;
-
+    private DataSetPreProcessor preProcessor;
     public ReconstructionDataSetIterator(DataSetIterator iter) {
         this.iter = iter;
     }
@@ -27,7 +27,7 @@ public class ReconstructionDataSetIterator implements DataSetIterator {
     @Override
     public DataSet next(int num) {
         DataSet ret = iter.next(num);
-        ret.setSecond(ret.getSecond());
+        ret.setLabels(ret.getFeatureMatrix());
         return ret;
     }
 
@@ -100,6 +100,17 @@ public class ReconstructionDataSetIterator implements DataSetIterator {
     }
 
     /**
+     * Set a pre processor
+     *
+     * @param preProcessor a pre processor to set
+     */
+    @Override
+    public void setPreProcessor(DataSetPreProcessor preProcessor) {
+        this.preProcessor = preProcessor;
+
+    }
+
+    /**
      * Returns {@code true} if the iteration has more elements.
      * (In other words, returns {@code true} if {@link #next} would
      * return an element rather than throwing an exception.)
@@ -119,7 +130,7 @@ public class ReconstructionDataSetIterator implements DataSetIterator {
     @Override
     public DataSet next() {
         DataSet next = iter.next();
-        next.setSecond(next.getFirst());
+        next.setLabels(next.getFeatureMatrix());
         return next;
     }
 

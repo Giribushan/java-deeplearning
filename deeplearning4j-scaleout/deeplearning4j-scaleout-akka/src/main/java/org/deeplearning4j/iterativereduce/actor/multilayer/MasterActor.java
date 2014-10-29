@@ -1,37 +1,5 @@
 package org.deeplearning4j.iterativereduce.actor.multilayer;
 
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.Serializable;
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
-import akka.dispatch.Futures;
-import org.deeplearning4j.datasets.DataSet;
-import org.deeplearning4j.dbn.DBN;
-import org.deeplearning4j.iterativereduce.actor.core.Ack;
-import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
-import org.deeplearning4j.iterativereduce.actor.core.DoneMessage;
-import org.deeplearning4j.iterativereduce.actor.core.Job;
-import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
-import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
-import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
-import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
-import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
-import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
-import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.DeepLearningAccumulatorIterateAndUpdate;
-import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
-import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.scaleout.conf.Conf;
-import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
-import org.deeplearning4j.util.SerializationUtils;
-import org.deeplearning4j.util.SetUtils;
-import org.jblas.DoubleMatrix;
-
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.PoisonPill;
@@ -39,6 +7,18 @@ import akka.actor.Props;
 import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.routing.RoundRobinPool;
+import org.deeplearning4j.iterativereduce.actor.core.*;
+import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.DeepLearningAccumulatorIterateAndUpdate;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
+import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.scaleout.conf.Conf;
+import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+
+import java.io.DataOutputStream;
+import java.util.Collection;
 
 
 /**
@@ -142,12 +122,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
-        if(conf.getColumnMeans() != null)
-            network.setColumnMeans(conf.getColumnMeans());
-        if(conf.getColumnStds() != null)
-            network.setColumnStds(conf.getColumnStds());
-
-        network.initializeLayers(DoubleMatrix.zeros(1,conf.getnIn()));
+        network.initializeLayers(Nd4j.zeros(1, conf.getConf().getnIn()));
 
         UpdateableImpl masterResults = new UpdateableImpl(network);
 

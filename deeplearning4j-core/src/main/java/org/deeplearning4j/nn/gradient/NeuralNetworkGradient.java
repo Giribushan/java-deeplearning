@@ -7,8 +7,9 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 
-import org.deeplearning4j.nn.Persistable;
-import org.jblas.DoubleMatrix;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.deeplearning4j.nn.api.Persistable;
 
 /**
  * Represents the gradient for changing a neural network
@@ -18,31 +19,31 @@ import org.jblas.DoubleMatrix;
 public class NeuralNetworkGradient implements Serializable,Persistable {
 	
 	private static final long serialVersionUID = 5611230066214840732L;
-	private DoubleMatrix wGradient;
-	private DoubleMatrix vBiasGradient;
-	private DoubleMatrix hBiasGradient;
+	private INDArray wGradient;
+	private INDArray vBiasGradient;
+	private INDArray hBiasGradient;
 
 
-	public DoubleMatrix getwGradient() {
+	public INDArray getwGradient() {
 		return wGradient;
 	}
-	public void setwGradient(DoubleMatrix wGradient) {
+	public void setwGradient(INDArray wGradient) {
 		this.wGradient = wGradient;
 	}
-	public DoubleMatrix getvBiasGradient() {
+	public INDArray getvBiasGradient() {
 		return vBiasGradient;
 	}
-	public void setvBiasGradient(DoubleMatrix vBiasGradient) {
+	public void setvBiasGradient(INDArray vBiasGradient) {
 		this.vBiasGradient = vBiasGradient;
 	}
-	public DoubleMatrix gethBiasGradient() {
+	public INDArray gethBiasGradient() {
 		return hBiasGradient;
 	}
-	public void sethBiasGradient(DoubleMatrix hBiasGradient) {
+	public void sethBiasGradient(INDArray hBiasGradient) {
 		this.hBiasGradient = hBiasGradient;
 	}
-	public NeuralNetworkGradient(DoubleMatrix wGradient,
-			DoubleMatrix vBiasGradient, DoubleMatrix hBiasGradient) {
+	public NeuralNetworkGradient(INDArray wGradient,
+			INDArray vBiasGradient, INDArray hBiasGradient) {
 		super();
 		this.wGradient = wGradient;
 		this.vBiasGradient = vBiasGradient;
@@ -76,9 +77,9 @@ public class NeuralNetworkGradient implements Serializable,Persistable {
 	 * @param num the number to divie by
 	 */
 	public void div(int num) {
-		wGradient.divi(num);
-		vBiasGradient.divi(num);
-		hBiasGradient.divi(num);
+		wGradient.divi(Nd4j.scalar(num));
+		vBiasGradient.divi(Nd4j.scalar(num));
+		hBiasGradient.divi(Nd4j.scalar(num));
 	}
 	
 	
@@ -135,5 +136,12 @@ public class NeuralNetworkGradient implements Serializable,Persistable {
 	}
 
 
-
+    @Override
+    public String toString() {
+        return "NeuralNetworkGradient{" +
+                "wGradient=" + wGradient +
+                ", vBiasGradient=" + vBiasGradient +
+                ", hBiasGradient=" + hBiasGradient +
+                '}';
+    }
 }

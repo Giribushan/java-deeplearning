@@ -14,10 +14,10 @@ Download a release
 ===========================
 
 Normal development distribution:
-https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-distribution/0.0.3.2-SNAPSHOT/
+https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-distribution/0.0.3.2-SNAPSHOT-SNAPSHOT/
 
 Examples distribution:
-https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/
+https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT-SNAPSHOT/
 
 
 
@@ -57,7 +57,6 @@ Neural net knobs supported
          Probability distribution manipulation for initial weight generation
 
 
-
 Coming up
 =============================
 
@@ -69,8 +68,7 @@ Contact
 Deeplearning4j has its own IRC channel at https://webchat.freenode.net/, a network intended primarily for developers of free and open source software. Just enter /join #deeplearning4j on IRC where you would normally type to chat.
 
 
-
-EXPERIMENTAL GPU SUPPORT (work in progress, only scaffolding for now)
+GPU Support (work in progress, only scaffolding for now)
 ==========================================
 
 Initial deployment instructions:
@@ -80,11 +78,10 @@ Initial deployment instructions:
 3. Include the linear-algebra-jcublas in your pom:
 
           <dependency>
-                    <groupId>org.deeplearning4j</groupId>
-                     <artifactId>linear-algebra-jcublas</artifactId>
+                    <groupId>org.nd4j</groupId>
+                     <artifactId>nd4j-jcublas</artifactId>
                       <version>0.0.3.2-SNAPSHOT</version>
                    </dependency>
-
 
 Bugs/Feature Requests
 =============================
@@ -110,7 +107,6 @@ Installation
             </repository>
        </repositories>
 
-
 ## Singular neural nets
        
        <dependency>
@@ -118,7 +114,6 @@ Installation
         <artifactId>deeplearning4j-core</artifactId>
          <version>0.0.3.2-SNAPSHOT</version>
       </dependency>
-
 
 ## Scaleout for multithreaded methods and clustering
        
@@ -128,14 +123,10 @@ Installation
          <version>0.0.3.2-SNAPSHOT</version>
         </dependency>
 
-
-
 ## Text analysis
 
          <dependency>
            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-scaleout-akka-word2vec</artifactId>
+            <artifactId>deeplearning4j-nlp/artifactId>
              <version>0.0.3.2-SNAPSHOT</version>
           </dependency>
-
-

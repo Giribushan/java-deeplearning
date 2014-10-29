@@ -1,11 +1,11 @@
 package org.deeplearning4j.iterativereduce.actor.core.actor;
 import java.util.List;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.actor.core.*;
 import org.deeplearning4j.iterativereduce.actor.multilayer.MasterActor;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
+import org.nd4j.linalg.dataset.DataSet;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.slf4j.Logger;
@@ -139,14 +139,6 @@ public class BatchActor extends UntypedActor {
                         stateTracker.workerData()), mediator);
             }
             else if(!iter.hasNext()) {
-                int iterations = stateTracker.runPreTrainIterations();
-                if (iterations < conf.getNumPasses()) {
-                    stateTracker.incrementNumTimesPreTrainRan();
-                    iter.reset();
-                    log.info("Next pretrain iteration " + stateTracker.numTimesPreTrainRun() + " out of " + stateTracker.runPreTrainIterations());
-                }
-
-                else
                     mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
                             DoneMessage.getInstance()), mediator);
             }
